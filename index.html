@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SIDC Cooperative System</title>
+<style>
+:root{--bg:#f1f5f9;--card:#fff;--tx:#0f172a;--mu:#64748b;--bd:#e2e8f0;--pr:#15803d;--pr2:#dcfce7;--dk:#0f172a;--rd:#b91c1c;--bl:#1d4ed8;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1220;--card:#131c2e;--tx:#e5e7eb;--mu:#94a3b8;--bd:#24304a;--pr:#4ade80;--pr2:#14532d;--dk:#020617;--rd:#f87171;--bl:#60a5fa}}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--tx)}
+#app{display:flex;min-height:100vh}
+nav{width:210px;background:var(--card);border-right:1px solid var(--bd);padding:16px 10px;flex-shrink:0}
+nav h1{font-size:15px;margin:0 8px 14px;color:var(--pr)}nav small{display:block;color:var(--mu);font-weight:400;font-size:11px}
+nav a{display:block;padding:9px 12px;border-radius:8px;color:var(--mu);text-decoration:none;font-size:14px;margin-bottom:3px;cursor:pointer}
+nav a.on{background:var(--pr);color:#fff}
+nav a.out{margin-top:20px;color:var(--rd)}
+main{flex:1;padding:20px;min-width:0}
+h2{margin:0 0 4px;font-size:20px}.sub{color:var(--mu);font-size:13px;margin-bottom:16px}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.c{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px}
+.c b{display:block;font-size:20px;margin-top:4px}.c span{font-size:12px;color:var(--mu)}
+.sc{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--mu);font-size:11px;text-transform:uppercase;padding:8px;border-bottom:1px solid var(--bd)}
+td{padding:9px 8px;border-bottom:1px solid var(--bd)}.r{text-align:right}
+input,select,textarea{width:100%;padding:8px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit;font-size:14px}
+label{font-size:12px;color:var(--mu);display:block;margin:8px 0 3px}
+.fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:0 12px}
+button{background:var(--pr);color:#fff;border:0;padding:9px 14px;border-radius:8px;font:inherit;font-size:13px;cursor:pointer;margin-top:12px}
+button.s{background:var(--bd);color:var(--tx)}button.d{background:none;color:var(--rd);margin:0;padding:2px 6px}
+.tag{padding:2px 8px;border-radius:99px;font-size:11px;background:var(--pr2);color:var(--pr)}
+.tag.p{background:var(--bd);color:var(--mu)}
+.ok{background:var(--pr2);color:var(--pr);padding:9px 12px;border-radius:8px;margin-bottom:12px;font-size:13px}
+.er{color:var(--rd);font-size:12px;margin-top:6px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+#login{max-width:340px;margin:12vh auto;padding:0 16px}
+a.l{color:var(--bl);cursor:pointer;text-decoration:underline;font-size:13px}
+.pr{display:none}
+@media(max-width:700px){#app{flex-direction:column}nav{width:100%;display:flex;flex-wrap:wrap;gap:4px;padding:8px}nav h1{width:100%;margin:0 4px 4px}nav a{margin:0;padding:6px 10px}nav a.out{margin:0}}
+@media print{nav,.np{display:none!important}.pr{display:block}main{padding:0}body{background:#fff;color:#000}.c{border-color:#999}}
+</style></head><body>
+<div id="root"></div>
+<script>
+var K='sidc_v1',S,view='dashboard',arg=null,msg='',err='';
+var NAME='San Isidro Development Cooperative';
+function load(){try{var d=localStorage.getItem(K);if(d)return JSON.parse(d)}catch(e){}return{auth:false,members:[],shares:[],loans:[],pays:[],log:[]}}
+function save(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}}
+S=load();
+var $=function(i){return document.getElementById(i)};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function P(n){return '₱'+(Math.round(n*100)/100).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function today(){return new Date().toISOString().slice(0,10)}
+function mem(id){return S.members.find(function(m){return m.id==id})||{name:'(deleted)',no:'—'}}
+function logit(t,m,a,d){S.log.push({ref:'T-'+String(S.log.length+1).padStart(4,'0'),date:d||today(),member:m,cat:t,amt:a})}
+function loanBal(l){return Math.round((l.principal-S.pays.filter(function(p){return p.loan==l.id}).reduce(function(a,p){return a+p.prin},0))*100)/100}
+function intDue(l,date){var mo=date.slice(0,7);var paid=S.pays.some(function(p){return p.loan==l.id&&p.date.slice(0,7)==mo&&p.int>0});return paid?0:Math.round(loanBal(l)*l.rate)/100}
+function go(v,a){view=v;arg=a||null;msg='';err='';render()}
+function nextNo(){var y=new Date().getFullYear()%100;return y+'-'+String(S.members.length+1).padStart(3,'0')}
+
+function render(){
+ if(!S.auth){$('root').innerHTML='<div id="login"><div class="c"><h2 style="color:var(--pr)">'+NAME+'</h2><div class="sub">Cooperative management system · Authorised personnel</div><label>Username</label><input id="u" value="admin"><label>Password</label><input id="pw" type="password" placeholder="demo: sidc2026"><button onclick="login()" style="width:100%">Sign in</button><div class="er" id="le"></div><div class="sub" style="margin-top:10px">Demo login only. Data stays in this browser. Replace with real server-side authentication before real use.</div></div></div>';return}
+ var items=[['dashboard','Dashboard'],['members','Members'],['shares','Capital Shares'],['receipts','Receipt Log'],['loans','Loan Portfolio'],['ledger','Audit Ledger']];
+ var nav='<nav><h1>SIDC System<small>'+NAME+'</small></h1>'+items.map(function(i){return '<a class="'+(view==i[0]?'on':'')+'" onclick="go(\''+i[0]+'\')">'+i[1]+'</a>'}).join('')+'<a class="out" onclick="S.auth=false;save();render()">Logout</a></nav>';
+ var m=msg?'<div class="ok">'+esc(msg)+'</div>':'';
+ $('root').innerHTML='<div id="app">'+nav+'<main>'+m+V[view]()+'</main></div>';
+}
+function login(){if($('u').value==='admin'&&$('pw').value==='sidc2026'){S.auth=true;save();render()}else $('le').textContent='Invalid credentials.'}
+
+var V={};
+V.dashboard=function(){
+ var sh=S.shares.reduce(function(a,x){return a+x.amt},0),pi=S.pays.reduce(function(a,x){return a+x.int+x.prin},0),rel=S.loans.reduce(function(a,l){return a+l.principal0},0);
+ var act=S.loans.filter(function(l){return loanBal(l)>0}).length;
+ return '<h2>Dashboard</h2><div class="sub">'+NAME+'</div><div class="g"><div class="c"><span>Total members</span><b>'+S.members.length+'</b></div><div class="c"><span>Capital shares</span><b>'+P(sh)+'</b></div><div class="c"><span>Active loans</span><b>'+act+'</b></div><div class="c"><span>Total receipts</span><b>'+P(sh+pi)+'</b></div></div><div class="c" style="max-width:320px"><span>Cash on hand</span><b>'+P(sh+pi-rel)+'</b><div class="sub" style="margin:6px 0 0">Shares '+P(sh)+' + loan payments '+P(pi)+' − loans released '+P(rel)+'</div></div>'};
+
+V.members=function(){
+ var f=arg==='new'?'<div class="c" style="margin-bottom:14px"><b style="font-size:15px">Add new member</b><div class="fg"><div><label>Member no. (auto)</label><input value="'+nextNo()+'" disabled></div><div><label>Full name</label><input id="mn"></div><div><label>Contact no.</label><input id="mc"></div><div><label>Date joined</label><input id="md" type="date" value="'+today()+'"></div><div><label>Type</label><select id="mt"><option>Regular</option><option>Associate</option><option>Client</option></select></div></div><label>Address</label><input id="ma"><div class="er">'+esc(err)+'</div><button onclick="addMember()">Register member</button> <button class="s" onclick="go(\'members\')">Cancel</button></div>':'';
+ return '<div class="top"><div><h2>Members</h2><div class="sub">Registry &amp; directory</div></div><button onclick="go(\'members\',\'new\')">+ Add member</button></div>'+f+'<div class="c sc"><table><tr><th>No.</th><th>Name</th><th>Contact</th><th>Type</th><th>Joined</th><th></th></tr>'+(S.members.map(function(m){return '<tr><td>'+esc(m.no)+'</td><td>'+esc(m.name)+'</td><td>'+esc(m.contact)+'</td><td><span class="tag">'+esc(m.type)+'</span></td><td>'+esc(m.date)+'</td><td><button class="d" onclick="delMember('+m.id+')">Delete</button></td></tr>'}).join('')||'<tr><td colspan="6" style="color:var(--mu)">No members yet.</td></tr>')+'</table></div>'};
+function addMember(){var n=$('mn').value.trim();if(!n){err='Name is required.';render();view='members';return}
+ S.members.push({id:Date.now(),no:nextNo(),name:n,contact:$('mc').value,date:$('md').value,type:$('mt').value,addr:$('ma').value});save();go('members');msg='Member added successfully.';render()}
+function delMember(id){var used=S.shares.some(function(x){return x.mem==id})||S.loans.some(function(x){return x.mem==id});
+ if(used){msg='';err='';alert('Cannot delete: this member has share or loan records (kept for audit).');return}
+ S.members=S.members.filter(function(m){return m.id!=id});save();render()}
+function opts(){return S.members.map(function(m){return '<option value="'+m.id+'">'+esc(m.no)+' — '+esc(m.name)+'</option>'}).join('')}
+
+V.shares=function(){
+ var tot=S.shares.reduce(function(a,x){return a+x.amt},0);
+ var f=arg==='new'?'<div class="c" style="margin-bottom:14px"><div class="fg"><div><label>Member</label><select id="sm">'+opts()+'</select></div><div><label>Contribution (₱)</label><input id="sa" type="number" min="0" step="0.01"></div><div><label>Date</label><input id="sd" type="date" value="'+today()+'"></div><div><label>Notes</label><input id="sn"></div></div><div class="er">'+esc(err)+'</div><button onclick="addShare()">Save</button> <button class="s" onclick="go(\'shares\')">Cancel</button></div>':'';
+ return '<div class="top"><div><h2>Capital Shares</h2><div class="sub">Ledger &amp; equity</div></div><button onclick="go(\'shares\',\'new\')">+ Add capital share</button></div><div class="g"><div class="c"><span>Contributors</span><b>'+new Set(S.shares.map(function(x){return x.mem})).size+'</b></div><div class="c"><span>Aggregate equity</span><b>'+P(tot)+'</b></div></div>'+f+'<div class="c sc"><table><tr><th>Ref</th><th>Member</th><th class="r">Contribution</th><th>Date</th><th>Notes</th></tr>'+(S.shares.slice().reverse().map(function(x){return '<tr><td>'+x.ref+'</td><td>'+esc(mem(x.mem).name)+'</td><td class="r">'+P(x.amt)+'</td><td>'+x.date+'</td><td>'+esc(x.note)+'</td></tr>'}).join('')||'<tr><td colspan="5" style="color:var(--mu)">No contributions yet.</td></tr>')+'</table></div>'};
+function addShare(){var a=parseFloat($('sa').value);if(!S.members.length){err='Add a member first.';render();return}
+ if(!(a>0)){err='Enter an amount greater than zero.';render();return}
+ var m=$('sm').value,d=$('sd').value||today(),r='CS-'+String(S.shares.length+1).padStart(3,'0');
+ S.shares.push({ref:r,mem:+m,amt:a,date:d,note:$('sn').value});logit('Capital Share',m,a,d);save();go('shares');msg='Capital share added successfully.';render()}
+
+V.receipts=function(){
+ var mo=arg&&arg.mo||today().slice(0,7),cat=arg&&arg.cat||'All';
+ var rows=S.log.filter(function(x){return x.date.slice(0,7)==mo&&(cat=='All'||x.cat==cat)});
+ var tot=rows.filter(function(x){return x.cat!='Loan Release'}).reduce(function(a,x){return a+x.amt},0);
+ return '<h2>Receipt Log</h2><div class="sub">Financial transaction audit trail</div><div class="c" style="margin-bottom:14px"><div class="fg"><div><label>Reporting month</label><input id="rm" type="month" value="'+mo+'"></div><div><label>Category</label><select id="rc">'+['All','Capital Share','Loan Payment','Loan Release'].map(function(c){return '<option'+(c==cat?' selected':'')+'>'+c+'</option>'}).join('')+'</select></div></div><button onclick="go(\'receipts\',{mo:$(\'rm\').value,cat:$(\'rc\').value})">Apply filter</button></div><div class="c" style="margin-bottom:14px"><span>Total receipts (excl. releases)</span><b>'+P(tot)+'</b></div><div class="c sc"><table><tr><th>Ref</th><th>Member</th><th class="r">Amount</th><th>Category</th><th>Date</th></tr>'+(rows.map(function(x){return '<tr><td>'+x.ref+'</td><td>'+esc(mem(x.member).name)+'</td><td class="r">'+P(x.amt)+'</td><td>'+x.cat+'</td><td>'+x.date+'</td></tr>'}).join('')||'<tr><td colspan="5" style="color:var(--mu)">No logs for this criteria.</td></tr>')+'</table></div>'};
+
+V.loans=function(){
+ if(arg&&arg.pay)return loanPay(arg.pay);
+ var f=arg==='new'?'<div class="c" style="margin-bottom:14px"><b style="font-size:15px">Release new loan</b><div class="fg"><div><label>Member</label><select id="lm">'+opts()+'</select></div><div><label>Amount (₱)</label><input id="la" type="number" min="0" step="0.01"></div><div><label>Interest rate (% per month)</label><input id="lr" type="number" value="3" step="0.01"></div><div><label>Term (months)</label><input id="lt" type="number" value="6"></div><div><label>Date</label><input id="ld" type="date" value="'+today()+'"></div></div><div class="er">'+esc(err)+'</div><button onclick="addLoan()">Release loan</button> <button class="s" onclick="go(\'loans\')">Cancel</button></div>':'';
+ return '<div class="top"><div><h2>Loan Portfolio</h2><div class="sub">Releases, balances, interest &amp; payments</div></div><button onclick="go(\'loans\',\'new\')">+ Release new loan</button></div>'+f+'<div class="c sc"><table><tr><th>Loan</th><th>Member</th><th class="r">Balance</th><th>Status</th><th></th></tr>'+(S.loans.map(function(l){var b=loanBal(l);return '<tr><td>'+l.no+'<br><small style="color:var(--mu)">'+l.rate+'% · '+l.term+' mo</small></td><td>'+esc(mem(l.mem).name)+'</td><td class="r">'+P(b)+'</td><td><span class="tag '+(b>0?'':'p')+'">'+(b>0?'ACTIVE':'PAID')+'</span></td><td><a class="l" onclick="go(\'loans\',{pay:'+l.id+'})">Payments</a></td></tr>'}).join('')||'<tr><td colspan="5" style="color:var(--mu)">No loans yet.</td></tr>')+'</table></div>'};
+function addLoan(){var a=parseFloat($('la').value),r=parseFloat($('lr').value),t=parseInt($('lt').value);
+ if(!S.members.length){err='Add a member first.';render();return}
+ if(!(a>0)||!(r>=0)||!(t>0)){err='Enter a valid amount, rate and term.';render();return}
+ var m=+$('lm').value,d=$('ld').value||today();
+ var ex=S.loans.find(function(l){return l.mem==m&&loanBal(l)>0});
+ if(ex){ex.principal+=a;ex.principal0+=a;logit('Loan Release',m,a,d);save();go('loans');msg='Additional loan of '+P(a)+' added to current balance (Loan '+ex.no+').';render();return}
+ S.loans.push({id:Date.now(),no:'L-'+String(S.loans.length+1).padStart(3,'0'),mem:m,principal:a,principal0:a,rate:r,term:t,date:d});
+ logit('Loan Release',m,a,d);save();go('loans');msg='New loan released successfully.';render()}
+function loanPay(id){
+ var l=S.loans.find(function(x){return x.id==id}),b=loanBal(l),pd=today(),idue=b>0?intDue(l,pd):0;
+ var ps=S.pays.filter(function(p){return p.loan==id});
+ return '<div class="top"><div><h2>Loan ledger: '+esc(mem(l.mem).name)+'</h2><div class="sub">'+l.no+' · '+l.rate+'% per month · '+l.term+' months</div></div><button class="s" onclick="go(\'loans\')">Back to loans</button></div><div class="g"><div class="c"><span>Principal paid</span><b>'+P(ps.reduce(function(a,p){return a+p.prin},0))+'</b></div><div class="c"><span>Interest paid</span><b>'+P(ps.reduce(function(a,p){return a+p.int},0))+'</b></div><div class="c"><span>Outstanding</span><b>'+P(b)+'</b></div></div>'+(b>0?'<div class="c" style="margin-bottom:14px"><b style="font-size:15px">Record new payment</b><div class="sub">Interest is applied first. Interest due now: '+P(idue)+' · Max payment: '+P(b+idue)+'</div><div class="fg"><div><label>Amount (₱)</label><input id="pa" type="number" step="0.01"></div><div><label>Date</label><input id="pdt" type="date" value="'+pd+'"></div></div><div class="er">'+esc(err)+'</div><button onclick="postPay('+id+')">Post payment</button></div>':'<div class="ok">This loan has been fully settled.</div>')+'<div class="c sc"><table><tr><th>Date</th><th>Ref</th><th class="r">Interest</th><th class="r">Principal</th><th class="r">Balance</th></tr><tr><td>'+l.date+'</td><td>Original release</td><td></td><td></td><td class="r">'+P(l.principal0)+'</td></tr>'+ps.map(function(p){return '<tr><td>'+p.date+'</td><td>'+p.ref+'</td><td class="r">'+P(p.int)+'</td><td class="r">'+P(p.prin)+'</td><td class="r">'+P(p.after)+'</td></tr>'}).join('')+'</table></div>'}
+function postPay(id){var l=S.loans.find(function(x){return x.id==id}),a=parseFloat($('pa').value),d=$('pdt').value||today();
+ var b=loanBal(l),idue=intDue(l,d),mx=Math.round((b+idue)*100)/100;
+ if(!(a>0)){err='Enter an amount greater than zero.';render();return}
+ if(a>mx){err='The maximum amount allowed is '+P(mx)+'.';render();return}
+ var i=Math.min(a,idue),pr=Math.round((a-i)*100)/100,after=Math.round((b-pr)*100)/100;
+ S.pays.push({loan:id,ref:'LP-'+String(S.pays.length+1).padStart(3,'0'),date:d,int:i,prin:pr,after:after});
+ logit('Loan Payment',l.mem,a,d);save();msg='Payment posted: '+P(i)+' interest, '+P(pr)+' principal.';err='';render()}
+
+V.ledger=function(){
+ var id=arg&&arg.m||(S.members[0]&&S.members[0].id);if(!id)return '<h2>Audit Ledger</h2><div class="sub">Add a member first.</div>';
+ var m=mem(id),ev=[];
+ S.loans.filter(function(l){return l.mem==id}).forEach(function(l){ev.push({d:l.date,t:'Loan release '+l.no,deb:l.principal0,cr:0})});
+ S.pays.filter(function(p){return mem(S.loans.find(function(l){return l.id==p.loan}).mem).id==id}).forEach(function(p){ev.push({d:p.date,t:'Loan payment '+p.ref,deb:0,cr:p.int+p.prin,i:p.int})});
+ ev.sort(function(a,b){return a.d<b.d?-1:1});var run=0;
+ var cap=S.shares.filter(function(x){return x.mem==id}).reduce(function(a,x){return a+x.amt},0),ip=ev.reduce(function(a,e){return a+(e.i||0)},0);
+ var out=S.loans.filter(function(l){return l.mem==id}).reduce(function(a,l){return a+loanBal(l)},0);
+ return '<div class="np"><h2>Audit Ledger</h2><div class="sub">Statement of account</div><div class="c" style="margin-bottom:14px"><label>Member</label><select id="lg" onchange="go(\'ledger\',{m:+this.value})">'+S.members.map(function(x){return '<option value="'+x.id+'"'+(x.id==id?' selected':'')+'>'+esc(x.no)+' — '+esc(x.name)+'</option>'}).join('')+'</select><button onclick="window.print()">Print statement</button></div></div><div class="pr"><h2>'+NAME+'</h2><div>Statement of account</div></div><div class="c" style="background:var(--dk);color:#fff;margin-bottom:12px"><span style="color:#94a3b8">Account holder</span><b>'+esc(m.name)+'</b><span style="color:#94a3b8">Member no. '+esc(m.no)+' · Outstanding loan '+P(out)+'</span></div><div class="g"><div class="c"><span>Accumulated capital</span><b>'+P(cap)+'</b></div><div class="c"><span>Total interest paid</span><b>'+P(ip)+'</b></div></div><div class="c sc"><table><tr><th>Date</th><th>Details</th><th class="r">Interest</th><th class="r">Debit (−)</th><th class="r">Credit (+)</th><th class="r">Balance</th></tr>'+(ev.map(function(e){var pr=e.cr?e.cr-(e.i||0):0;run=Math.round((run+e.deb-pr)*100)/100;return '<tr><td>'+e.d+'</td><td>'+e.t+'</td><td class="r">'+(e.i?P(e.i):'')+'</td><td class="r">'+(e.deb?P(e.deb):'')+'</td><td class="r">'+(pr?P(pr):'')+'</td><td class="r">'+P(run)+'</td></tr>'}).join('')||'<tr><td colspan="6" style="color:var(--mu)">No loan activity.</td></tr>')+'</table><div class="sub" style="margin-top:8px">Credit = principal repaid; interest is shown in its own column. Balance = outstanding loan principal.</div></div>'};
+render();
+</script></body></html>
